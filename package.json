@@ -1,0 +1,30 @@
+{
+  "name": "mpc-zk-rps",
+  "version": "1.0.0",
+  "description": "Implementation of rock-paper-scissors in circom and snarkjs to verify zero-knowledge proofs onchain and using multi-party computation to ensure privacy in the plays.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manudev97/mpc-zk-rps.git"
+  },
+  "keywords": [
+    "zk",
+    "mpc",
+    "fhe",
+    "game",
+    "blockchain",
+    "cryptography"
+  ],
+  "author": "manudev97",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/manudev97/mpc-zk-rps/issues"
+  },
+  "homepage": "https://github.com/manudev97/mpc-zk-rps#readme",
+  "dependencies": {
+    "circomlib": "^2.0.5"
+  }
+}
