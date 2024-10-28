@@ -58,6 +58,55 @@ snarkjs r1cs print rps.r1cs rps.sym # show constraints with signals
 snarkjs r1cs export json rps.r1cs rps.r1cs.json # better reading of r1cs (see mapping against .sym)
 ```
 
+Each constraint is represented as a triplet of vectors $(a, b, c)$ satisfying a vector solution $w$, such that $(a \cdot w) ∗ (b \cdot w) = (c \cdot w)$ where $(\cdot)$ is the product of vectors and $(∗)$ the product of inputs, under modular prime arithmetic
+$$p = 21888242871839275222246405745257275088548364400416034343698204186575808495617.$$
+As defined in the `rps.r1cs.json` file, we force the numbers to stay within the field order. This finally translates into an R1CS of the form $(A \cdot w) ∗ (B \cdot w) = (C \cdot w)$ where $A, B$ and $C$ are $n \times m$ matrices that fully describe the computation in the arithmetic circuit, $n$ equal to the number of constraints and $m$ equal to the number of signals involved in the circuit plus 1, this element 1 is added at position $w_0 = 1$, because otherwise $w_0 = 0$ would satisfy all instances of R1CS. In this example $n = 15$ (`nVar` in `rps.r1cs.json`) and $m = 17$ (`nConstraints` in `rps.r1cs.json`). In the rps.r1cs.json object the map key sets the signals that generate the R1CS and in this way we know the value of $m$. A rank 1 constraint system must be fixed and immutable, this means that we cannot change the number of columns once defined, and we cannot change the values ​​of the matrices.
+
+To better observe how the matrices $A, B, C$ that form the constraints of the `rps_constraints.json` files are defined, run the [matricesABC.py](scripts\matricesABC.py) python script (you need to have python3 installed) and pass as a parameter the value of $m$ (the number of columns of each matrix or signals that intervene in the circuit and form the witness $w$).
+```bash
+python matricesABC.py 17
+```
+
+#### Witness (Create input.json file)
+
+The following `input.json` file with input signals player1 and player2 satisfy the R1CS and generates a valid token for the circuit, but the `input_1.json` file does not.
+`input.json`
+```js
+{"player1": 2, "player2": 5}
+```
+`input_1.json`
+```js
+{"player1": 2, "player2": 1}
+```
+
+> Make sure you are located in the /rps_js path
+```bash
+nano input.json # add signal input values
+node generate_witness.js rps.wasm input.json witness.wtns # show log() if they exist
+snarkjs wtns export json witness.wtns witness.json # better reading of witness
+```
+
+For the circuit input signals in the file `input.json` the following witness is satisfied
+```js
+[
+ "1",
+ "1",
+ "2",
+ "5",
+ "0",
+ "6",
+ "10",
+ "1",
+ "0",
+ "1",
+ "1",
+ "14592161914559516814830937163504850059032242933610689562465469457717205663745",
+ "1",
+ "0",
+ "0"
+]
+```
 # Resources
 - [Circom Documentation](https://docs.circom.io/getting-started/installation/)
 - [Explanatory video of the RPS circuit](https://youtu.be/AWA107F2uDQ)
+- [coSNARKs docs - TACEO](https://docs.taceo.io/docs/primer/collabSNARKs-primer/)
