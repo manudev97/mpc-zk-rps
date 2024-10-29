@@ -110,7 +110,7 @@ For the circuit input signals in the file `input.json` the following witness is 
 ]
 ```
 
-### Building a QAP (R1CS -> QAP)
+### Step 3: Building a QAP (R1CS -> QAP)
 
 The R1CS represents our zero-knowledge proof but evaluating it is not succinct due to multiple matrix multiplications. A quadratic arithmetic program (QAP) is defined as a system of equations in which the coefficients are polynomials in a single variable. When we find a valid solution to this system of equations, we obtain a single polynomial equality. The quadratic characteristic refers to the fact that these systems involve exactly one polynomial multiplication. QAPs play a key role in the succinctness of zkSNARKs. We want to evaluate the polynomials and then compare the evaluations. Going from vector multiplication to polynomials is straightforward when the problem is posed as a homomorphism between algebraic rings. There is a homomorphism from a ring of n-dimensional column vectors with elements in $\mathbb{R}$ to the ring of polynomials with coefficients in $\mathbb{R}$. This means that we can transform our matrices $A$, $B$, and $C$ into polynomials while retaining the same properties.
 
@@ -184,6 +184,107 @@ C = Matrix(Fp,
 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
 )
 ```
+They are not really matrices, they are sets $A$, $B$ and $C$ of vectors.
+
+Now we tell SageMath what our witness is:
+
+```python
+w = vector(Fp, [1, 1, 2, 5, 0, 6, 10, 1, 0, 1, 1, 14592161914559516814830937163504850059032242933610689562465469457717205663745, 1, 0, 0])
+```
+
+The solution vector (witness) contains 15 elements, so we can build 15 polynomials. Each constraint contributes 1 point to each polynomial. We have 17 constraints, we get 17 points per polynomial. By [Lagrange's Interpolation](https://en.wikipedia.org/wiki/Lagrange_polynomial) Theorem, 17 points allow us to define a polynomial of degree at most 16. Each column of $A$, $B$, and $C$ has 17 elements. So, each of these columns can be converted into a polynomial of degree 16.
+
+For example, the third column of $B$ is:
+
+```bash
+[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16416182153879456416684804308942956316411273300312025757773653139931856371713, 0, 0, 0]
+```
+
+We can consider each element as the $y$-coordinate corresponding to $x \in \left\lbrace 1,2,...,17 \right\rbrace$. Then we get 17 sets of points:
+
+```js
+(1, 1), (2, 0), (3, 1), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0), (12, 0), (13, 0), (14, 16416182153879456416684804308942956316411273300312025757773653139931856371713), (15, 0), (16, 0), (17, 0)
+```
+
+This is an arbitrary interpretation that we used to convert the R1CS to QAP format. We can find the polynomial that passes through these 17 points using Lagrange interpolation in SageMath:
+
+```python
+Rp.<x> = PolynomialRing(Fp)
+points = [(1, 1), (2, 0), (3, 1), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0), (9, 0), (10, 0), (11, 0), (12, 0), (13, 0), (14, 16416182153879456416684804308942956316411273300312025757773653139931856371713), (15, 0), (16, 0), (17, 0)]
+polynomial = Rp.lagrange_polynomial(points)
+polynomial
+```
+
+Then the polynomial corresponding to the third column of B is:
+
+```python
+15624624801003266146123744110675033400316102767028612663392052820050642052007*x^16 + 17628065561221056146420092394011072179943968248494275181725825496536971490283*x^15 + 17353592929480685758123766545248153217743635675656681004378327879647490967805*x^14 + 15996215007708504636513532868504604857740109347619408867212110683820354752672*x^13 + 15916998015778378463559132581592258263588077371489023180323232894149972371716*x^12 + 19593242095915470732852266693198891387964770812279165210956308854474009469479*x^11 + 19564098627772856912612858925738453011150982364337356489898970964472310787735*x^10 + 20857111160187485875104950557454773680299421998346142647015625344113457534794*x^9 + 8307009206713903184831845281372949038367251519948680457585572764145088699361*x^8 + 8598512473207131880157231846176769639620137928150157730655798801494736995497*x^7 + 21242051946697407586152144374283104207621490628614568335227311722044941646686*x^6 + 8638972196378427861180691635134304502128693335083771678556958974591611655189*x^5 + 3190896340709695064018868629520321230544004734997622169165467995876547024187*x^4 + 13049749194481386250557418139608526070829178377388106590695092533646799741735*x^3 + 8241942491040182995809668277856103073410276940007627418520083892492048931300*x^2 + 5079346670096912728445844592197433124215541954719143811673300244201100835198*x + 527
+```
+
+We calculate all the polynomials (45) by columns.
+
+```python
+M = [A, B, C]
+PolyM = []
+	
+for m in M:
+	PolyList = []
+	for i in range(m.ncols()):
+	    points = []
+	    for j in range(m.nrows()):
+	        points.append([j+1,m[j,i]])
+	
+	    Poly = Rp.lagrange_polynomial(points).coefficients(sparse=False)
+	
+	    if(len(Poly) < m.nrows()):
+	        # if the degree of the polynomial is less than 6
+            # we add zeros to represent the omitted terms
+	        dif = m.nrows() - len(Poly)
+	        for c in range(dif):
+	            Poly.append(0);
+	
+	    PolyList.append(Poly)
+	PolyM.append(Matrix(Fp, PolyList))
+```
+We build new matrices with the polynomial coefficients, for example `PolyM[0]` is now a matrix of dimension $15 \times 17$. By multiplying this `PolyM[0]` by the matrix that forms the witness vector only of dimension $17 \times 1$ we obtain, a matrix of dimension $17 \times 1$, which again we can transform into a single polynomial. In this way the set $A$ of vectors of the R1CS is transformed into a polynomial $Ax$.
+
+```python
+Ax = Rp(list(w*PolyM[0]))
+Bx = Rp(list(w*PolyM[1]))
+Cx = Rp(list(w*PolyM[2]))
+print("A(x) = " + str(Ax))
+print("B(x) = " + str(Bx))
+print("C(x) = " + str(Cx))
+```
+
+Then we have that: R1CS: $A \cdot w ∗ B \cdot w = C \cdot w \Rightarrow$ QAP: $T(x) = A(x) \cdot B(x) − C(x)$.
+
+```python
+Tx= Ax * Bx - Cx
+print("T(x) = " + str(Tx))
+```
+
+The verifier does not know the polynomial $T(x)$, nor can he compute it since he does not know the solution vector $w$ (witness). So, the prover has to prove to the verifier that $T(x) = 0$ for $x \in \left\lbrace 1,2,...,17 \right\rbrace$. We evaluate $T(x)$ at $x$.
+
+```python
+print("T(0) = " + str(Tx(0))) # T(0) = 7296080957279758407415468581752425029516121466805344781232734728861797292647
+print("T(1) = " + str(Tx(1))) # T(1) = 0
+print("T(7) = " + str(Tx(7))) # T(7) = 0
+print("T(11) = " + str(Tx(11))) # T(11) = 0
+print("T(17) = " + str(Tx(17))) # T(17) = 0
+print("T(20) = " + str(Tx(20))) # T(20) = 52158647723208
+print("T(50) = " + str(Tx(50))) # T(50) = 5518357011455093502173317821972068
+```
+
+We observe that evaluating any other point such as 0, 20 and 50 for example, is not a solution to this polynomial $T(x)$. This also means that there exists a polynomial $H(x)$, such that: $T(x) = H(x) \cdot Z(x)$ where $Z(x) = (x − 1)(x − 2)...(x − 17)$. In other words, the division $\dfrac{T(x)}{Z(x)}$ has no remainder and the result $H(x)$ is a polynomial $H(x) = \dfrac{T(x)}{Z(x)}$ and the verifier has to check that this is true. $Z(x)$ is known to both the Prover and the Verifier.
+
+```python
+Rp((x - 1)*(x - 2)*(x - 3)*(x - 4)*(x - 5)*(x - 6)*(x - 7)*(x - 8)*(x - 9)*(x - 10)*(x - 11)*(x - 12)*(x - 13)*(x - 14)*(x - 15)*(x - 16)*(x - 17))
+Tx.quo_rem(Zx)
+print("Cociente de Tx/Zx = ", Hx[0])
+print("Resto de Tx/Zx = ", Hx[1])
+```
+
 
 # Resources
 - [Circom Documentation](https://docs.circom.io/getting-started/installation/)
