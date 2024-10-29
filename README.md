@@ -49,7 +49,7 @@ The circuit `rps.circom` is already created, but to compile it correctly, we nee
 
 In this step, we will build a zkSNARK **R1CS (Rank-1 Constraint System)** for the circuit `rps.circom`. The R1CS is an arithmetic representation of the circuit, which is used to define the constraints needed to verify a statement without revealing information about the inputs. This system is based on a series of multiplications and additions in a finite field defined in circom, which represent the operations performed in the circuit. For the circuit `rps.circom`, the R1CS will allow to analyze all the components needed for the arithmetization of a prover's statement.
 
-> Make sure you are located in the /circuits path
+> Make sure you are located in the /circuits path.
 ```bash 
 circom rps.circom --inspect # inspect code (errors, warnings) 
 circom rps.circom --r1cs --wasm --sym --json # compile (sym - signals) 
@@ -59,17 +59,20 @@ snarkjs r1cs export json rps.r1cs rps.r1cs.json # better reading of r1cs (see ma
 ```
 
 Each constraint is represented as a triplet of vectors $(a, b, c)$ satisfying a vector solution $w$, such that $(a \cdot w) ∗ (b \cdot w) = (c \cdot w)$ where $(\cdot)$ is the product of vectors and $(∗)$ the product of inputs, under modular prime arithmetic
+
 $$p = 21888242871839275222246405745257275088548364400416034343698204186575808495617.$$
-As defined in the `rps.r1cs.json` file, we force the numbers to stay within the field order. This finally translates into an R1CS of the form $(A \cdot w) ∗ (B \cdot w) = (C \cdot w)$ where $A, B$ and $C$ are $n \times m$ matrices that fully describe the computation in the arithmetic circuit, $n$ equal to the number of constraints and $m$ equal to the number of signals involved in the circuit plus 1, this element 1 is added at position $w_0 = 1$, because otherwise $w_0 = 0$ would satisfy all instances of R1CS. In this example $n = 15$ (`nVar` in `rps.r1cs.json`) and $m = 17$ (`nConstraints` in `rps.r1cs.json`). In the rps.r1cs.json object the map key sets the signals that generate the R1CS and in this way we know the value of $m$. A rank 1 constraint system must be fixed and immutable, this means that we cannot change the number of columns once defined, and we cannot change the values ​​of the matrices.
+
+As defined in the `rps.r1cs.json` file, we force the numbers to stay within the field order. This finally translates into an R1CS of the form $(A \cdot w) ∗ (B \cdot w) = (C \cdot w)$ where $A, B$ and $C$ are $n \times m$ matrices that fully describe the computation in the arithmetic circuit, $n$ equal to the number of constraints and $m$ equal to the number of signals involved in the circuit plus 1, this element 1 is added at position $w_0 = 1$, because otherwise $w_0 = 0$ would satisfy all instances of R1CS. In this example $n = 17$ (`nVar` in `rps.r1cs.json`) and $m = 15$ (`nConstraints` in `rps.r1cs.json`). In the rps.r1cs.json object the map key sets the signals that generate the R1CS and in this way we know the value of $m$. A rank 1 constraint system must be fixed and immutable, this means that we cannot change the number of columns once defined, and we cannot change the values ​​of the matrices.
 
 To better observe how the matrices $A, B, C$ that form the constraints of the `rps_constraints.json` files are defined, run the [matricesABC.py](scripts\matricesABC.py) python script (you need to have python3 installed) and pass as a parameter the value of $m$ (the number of columns of each matrix or signals that intervene in the circuit and form the witness $w$).
 ```bash
-python matricesABC.py 17
+python ../scripts/matricesABC.py 15
 ```
 
 #### Witness (Create input.json file)
 
 The following `input.json` file with input signals player1 and player2 satisfy the R1CS and generates a valid token for the circuit, but the `input_1.json` file does not.
+
 `input.json`
 ```js
 {"player1": 2, "player2": 5}
@@ -79,14 +82,14 @@ The following `input.json` file with input signals player1 and player2 satisfy t
 {"player1": 2, "player2": 1}
 ```
 
-> Make sure you are located in the /rps_js path
+> Make sure you are located in the /rps_js path.
 ```bash
 nano input.json # add signal input values
 node generate_witness.js rps.wasm input.json witness.wtns # show log() if they exist
 snarkjs wtns export json witness.wtns witness.json # better reading of witness
 ```
 
-For the circuit input signals in the file `input.json` the following witness is satisfied
+For the circuit input signals in the file `input.json` the following witness is satisfied.
 ```js
 [
  "1",
@@ -106,7 +109,84 @@ For the circuit input signals in the file `input.json` the following witness is 
  "0"
 ]
 ```
+
+### Building a QAP (R1CS -> QAP)
+
+The R1CS represents our zero-knowledge proof but evaluating it is not succinct due to multiple matrix multiplications. A quadratic arithmetic program (QAP) is defined as a system of equations in which the coefficients are polynomials in a single variable. When we find a valid solution to this system of equations, we obtain a single polynomial equality. The quadratic characteristic refers to the fact that these systems involve exactly one polynomial multiplication. QAPs play a key role in the succinctness of zkSNARKs. We want to evaluate the polynomials and then compare the evaluations. Going from vector multiplication to polynomials is straightforward when the problem is posed as a homomorphism between algebraic rings. There is a homomorphism from a ring of n-dimensional column vectors with elements in $\mathbb{R}$ to the ring of polynomials with coefficients in $\mathbb{R}$. This means that we can transform our matrices $A$, $B$, and $C$ into polynomials while retaining the same properties.
+
+Let's transform our R1CS to QAP using [SageMath](https://www.sagemath.org/download.html) (this procedure is done by the snarkjs library).
+
+We define the finite field:
+
+```python
+p = 21888242871839275222246405745257275088548364400416034343698204186575808495617
+2 Fp = GF(p)
+```
+
+We instantiate the matrices $A$, $B$ and $C$ that form R1CS for the circuit `rps.circom`.
+
+```python
+A = Matrix(Fp,
+[[2, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[21888242871839275222246405745257275088548364400416034343698204186575808495612, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[2, 0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[21888242871839275222246405745257275088548364400416034343698204186575808495612, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[21888242871839275222246405745257275088548364400416034343698204186575808495615, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+[1, 0, 0, 0, 0, 0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+[21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+[0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+[21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+[21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 16416182153879456416684804308942956316411273300312025757773653139931856371713, 5472060717959818805561601436314318772137091100104008585924551046643952123904, 0, 0, 0, 0, 0, 2, 0, 0, 5472060717959818805561601436314318772137091100104008585924551046643952123904, 10944121435919637611123202872628637544274182200208017171849102093287904247808, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0],
+[21888242871839275222246405745257275088548364400416034343698204186575808495607, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+[21888242871839275222246405745257275088548364400416034343698204186575808495607, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]]
+)
+B = Matrix(Fp,
+[[21888242871839275222246405745257275088548364400416034343698204186575808495614, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[21888242871839275222246405745257275088548364400416034343698204186575808495614, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+[21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0, 0, 0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 1, 0, 0, 0, 0],
+[0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+[0, 0, 16416182153879456416684804308942956316411273300312025757773653139931856371713, 5472060717959818805561601436314318772137091100104008585924551046643952123904, 0, 0, 0, 0, 0, 2, 0, 0, 5472060717959818805561601436314318772137091100104008585924551046643952123904, 10944121435919637611123202872628637544274182200208017171849102093287904247808, 0],
+[1, 0, 0, 0, 0, 0, 0, 0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+[0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]]
+)
+C = Matrix(Fp,
+[[0, 0, 0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[1, 0, 0, 0, 0, 0, 0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+[1, 0, 0, 0, 0, 0, 0, 21888242871839275222246405745257275088548364400416034343698204186575808495616, 0, 0, 0, 0, 0, 0, 0],
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+)
+```
+
 # Resources
 - [Circom Documentation](https://docs.circom.io/getting-started/installation/)
 - [Explanatory video of the RPS circuit](https://youtu.be/AWA107F2uDQ)
 - [coSNARKs docs - TACEO](https://docs.taceo.io/docs/primer/collabSNARKs-primer/)
+- [SageMath docs](https://doc.sagemath.org/html/en/a_tour_of_sage/)
