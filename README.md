@@ -73,6 +73,8 @@ python ../scripts/matricesABC.py 15
 
 The following `input.json` file with input signals player1 and player2 satisfy the R1CS and generates a valid token for the circuit, but the `input_1.json` file does not.
 
+> Make sure you are located in the /rps_js path.
+
 `input.json`
 ```js
 {"player1": 2, "player2": 5}
@@ -82,7 +84,6 @@ The following `input.json` file with input signals player1 and player2 satisfy t
 {"player1": 2, "player2": 1}
 ```
 
-> Make sure you are located in the /rps_js path.
 ```bash
 nano input.json # add signal input values
 node generate_witness.js rps.wasm input.json witness.wtns # show log() if they exist
@@ -279,12 +280,49 @@ print("T(50) = " + str(Tx(50))) # T(50) = 5518357011455093502173317821972068
 We observe that evaluating any other point such as 0, 20 and 50 for example, is not a solution to this polynomial $T(x)$. This also means that there exists a polynomial $H(x)$, such that: $T(x) = H(x) \cdot Z(x)$ where $Z(x) = (x − 1)(x − 2)...(x − 17)$. In other words, the division $\dfrac{T(x)}{Z(x)}$ has no remainder and the result $H(x)$ is a polynomial $H(x) = \dfrac{T(x)}{Z(x)}$ and the verifier has to check that this is true. $Z(x)$ is known to both the Prover and the Verifier.
 
 ```python
-Rp((x - 1)*(x - 2)*(x - 3)*(x - 4)*(x - 5)*(x - 6)*(x - 7)*(x - 8)*(x - 9)*(x - 10)*(x - 11)*(x - 12)*(x - 13)*(x - 14)*(x - 15)*(x - 16)*(x - 17))
-Tx.quo_rem(Zx)
+Zx = Rp((x - 1)*(x - 2)*(x - 3)*(x - 4)*(x - 5)*(x - 6)*(x - 7)*(x - 8)*(x - 9)*(x - 10)*(x - 11)*(x - 12)*(x - 13)*(x - 14)*(x - 15)*(x - 16)*(x - 17))
+Hx = Tx.quo_rem(Zx)
 print("Cociente de Tx/Zx = ", Hx[0])
 print("Resto de Tx/Zx = ", Hx[1])
 ```
 
+### Step 3: Create the proof system configuration (Groth16)
+
+The configuration is always divided into two phases: Phase 1, Evaluate the polynomial T(x) (not dependent on the circuit) and Phase 2, generate the keys (depends on the circuit). For this reason in Groth16 if you change something in the circuit you have to do the configuration again. The configuration is not universal as in Plonk.
+
+> Make sure you are at the root of the project
+
+```bash
+mkdir build
+cp circuits/rps_1in_pr.r1cs build/
+bash scripts/quickSetup.sh
+```
+
+### Step 4: Create zero-knowledge proofs
+
+So with these two commands you can create proofs, but this can also be done in the browser (client) with a function, just like checking proofs in the browser (client) as well.
+
+```bash
+mkdir prover
+snarkjs groth16 prove build/circuit_final.zkey circuits/rps_1in_pr_js/witness.wtns prover/proof.json prover/public.json
+snarkjs groth16 fullprove circuits/rps_1in_pr_js/input.json circuits/rps_1in_pr_js//rps_1in_pr.wasm build/circuit_final.zkey prover/proof1.json prover/public1.json # generate witnesses and proofs at the same time
+```
+
+### Step 5: Verify zero-knowledge proofs
+
+Verify zero-knowledge proofs
+
+```bash
+snarkjs groth16 verify build/verification_key.json prover/public.json prover/proof.json
+```
+
+#### On-chain verification
+
+```bash 
+mkdir contracts
+snarkjs zkey export solidityverifier build/circuit_final.zkey contracts/Verifier.sol
+snarkjs zkey export soliditycalldata prover/public.json prover/proof.json # parameters call to the Verifier.sol contract
+```
 
 # Resources
 - [Circom Documentation](https://docs.circom.io/getting-started/installation/)
