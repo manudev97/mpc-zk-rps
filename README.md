@@ -1,3 +1,12 @@
+# Index
+
+- [✊ Rock ✋ Paper ✌️ Scissors | MPC - coSNARKs](#-rock-paper-scissors--mpc---cosnarks)
+- [🎯 Our Contribution](#-our-contribution)
+- [✅ Prerequisites](#-prerequisites)
+- [📝 Documentation zk-SNARKs](#-documentation-zk-snarks)
+- [🎮 Understanding the game](#-understanding-the-game)
+- [🔒 Private plays with co-SNARKs](#-private-plays-with-co-snarks)
+
 ## ✊ Rock ✋ Paper ✌️ Scissors | MPC - coSNARKs
 
 This project implements the game of rock-paper-scissors in the Circom language, employing advanced principles of cryptography such as zero-knowledge proofs and multi-party computation. The application allows players to participate without revealing their choices, using homomorphic encryption or a shared secret scheme to keep the moves private. This implementation demonstrates how the fundamentals of cryptography can be applied to games and other interactive applications in a secure and trustworthy manner.
@@ -24,7 +33,7 @@ To get started with this project, make sure you have the following installed:
 
 Please ensure each of these dependencies is installed and properly configured before proceeding.
 
-## 📝 Documentation
+## 📝 Documentation zk-SNARKs
 
 This section describes each step in detail to make it easier to follow and contribute to the development of the project. Make sure to follow the steps in order and review each instruction before continuing.
 
@@ -288,7 +297,9 @@ print("Resto de Tx/Zx = ", Hx[1])
 
 ### Step 3: Create the proof system configuration (Groth16)
 
-The configuration is always divided into two phases: Phase 1, Evaluate the polynomial T(x) (not dependent on the circuit) and Phase 2, generate the keys (depends on the circuit). For this reason in Groth16 if you change something in the circuit you have to do the configuration again. The configuration is not universal as in Plonk.
+When you run the script `quickSetup.sh` you will download a transcript of a trust ceremony where MPC was performed to generate these keys. This ceremony is secure because many people from the ecosystem have participated, including Vitalik, and it is available to everyone and anyone can make their contribution. This ceremony is called Perpetual Powers of Tau and any project can use it for its configuration. The configuration is always divided into two phases: Phase 1, Evaluate the polynomial T(x) (not dependent on the circuit) and Phase 2, generate the keys (depends on the circuit). For this reason in Groth16 if you change something in the circuit you have to do the configuration again. The configuration is not universal as in Plonk.
+
+<img src="assets/trust_ceremony.png" alt="trust_ceremony" width="350" height="250"/>
 
 > Make sure you are at the root of the project
 
@@ -324,8 +335,30 @@ snarkjs zkey export solidityverifier build/circuit_final.zkey contracts/Verifier
 snarkjs zkey export soliditycalldata prover/public.json prover/proof.json # parameters call to the Verifier.sol contract
 ```
 
+## 🎮 Understanding the game
+
+Players should have a way to know who won, lost or tied, after showing their proofs. We have been referring to the interaction from the point of view of the Prover (players of the game) and the Verifier of the Smart Contract in Ethereum. Not from the point of view of the players.
+
+So, if we agree on that, there are two ways to make the game decisions:
+1. **First way**: the `input.json` file has the moves `{player1: 2, player2: 5}`. From the input, the witness is created and with that witness a proof is generated. If we make the second move a public signal (we don't need zero knowledge for the second move) the game makes sense for one round. Since the first move is private, the first player will show a zero knowledge proof that he knows that move without showing it. The first player sends his proof on chain but he has to make a prior declaration that his move wins, loses or draws. Since the second move is a public signal that the second player will make later and the output of the circuit is another public signal, the Verifier.sol contract will simply verify whether the statement made by the prover, which is the first player, is fulfilled or not. The contract verifies that the public signals match the declared proof, or not. That is the first way that is feasible, but the drawback here is that the second move is public and ideally we would all like the idea of ​​all moves being private.
+
+We have created a new circuit, but identical to the rps.circcom one, this one is called `rps_1in_pr.circom` to homologate this scenario that we discussed, the only difference is that the input of the second player is public and not private, the modification in the circuit is just the following line
+<img src="assets/signal_pb.png" alt="signal_pb" width="500" height="20"/>
+After generating the Verifier.sol contract we can generate the parameters to call the function that verifies the proofs. For a successful proof the function returns true
+<img src="assets/proof_true.png" alt="proof_true" width="200" height="70"/>
+
+So if the player had played paper = 3. The public signal when you call Verifier does not satisfy the proof then the prover's statement is false and therefore he loses.
+<img src="assets/proof_false.png" alt="proof_false" width="350" height="250"/>
+
+In a second case, each player must present a proof of their move that guarantees zero knowledge.
+
+2. **Second way**: This is where collaborative zkSNARKs (coSNARKs) come in. The only way to ensure this is through MPC because you encrypt the two moves so that no one knows what the players played and you perform operations on that encrypted data homomorphically. Each player then creates a witness and a proof of their move. The proofs are then joined together using MPC to form a single proof that is verified on-chain.
+
+## 🔒 Private plays with co-SNARKs
+
 # Resources
 - [Circom Documentation](https://docs.circom.io/getting-started/installation/)
 - [Explanatory video of the RPS circuit](https://youtu.be/AWA107F2uDQ)
 - [coSNARKs docs - TACEO](https://docs.taceo.io/docs/primer/collabSNARKs-primer/)
+- [Explanatory video of co-SNARKs](https://youtu.be/w2HJxrDE01k?si=Rkt_1jKUxldK_hka)
 - [SageMath docs](https://doc.sagemath.org/html/en/a_tour_of_sage/)
