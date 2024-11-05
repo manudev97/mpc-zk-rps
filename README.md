@@ -30,7 +30,7 @@ To get started with this project, make sure you have the following installed:
 - [**Node.js**](https://nodejs.org/en/download/package-manager): Required to run JavaScript-based tools and scripts.
 - [**Circom**](https://docs.circom.io/getting-started/installation/): Needed to define and compile zkSNARK circuits.
 - [**Snarkjs**](https://www.npmjs.com/package/snarkjs): Used to generate and verify zkSNARK proofs, as well as to create verifier contracts in Solidity.
-
+- [**co-circom**](https://docs.taceo.io/docs/getting-started/install/): Required to perform MPC (co-SNARK) with the private input signals in Circom
 Please ensure each of these dependencies is installed and properly configured before proceeding.
 
 ## 📝 Documentation zk-SNARKs
@@ -355,6 +355,46 @@ In a second case, each player must present a proof of their move that guarantees
 2. **Second way**: This is where collaborative zkSNARKs (coSNARKs) come in. The only way to ensure this is through MPC because you encrypt the two moves so that no one knows what the players played and you perform operations on that encrypted data homomorphically. Each player then creates a witness and a proof of their move. The proofs are then joined together using MPC to form a single proof that is verified on-chain.
 
 ## 🔒 Private plays with co-SNARKs
+
+In this scenario, like the second way outlined above to run the game, both players inputs will be private, unlike the previous setup where only one of the moves was kept secret. We will use the `rps.circom` circuit to generate a witness and proofs for each player, ensuring that their choices remain confidential.
+
+`input.json`
+
+```js
+{
+	"a": "3", // signal private
+	"b": "11" // signal private
+}
+```
+
+Since we want to run an MPC protocol, we need to split the `input.json` file for parts. At this moment co-circom, supports 3 parts for witness extension. To do so, run the following command:
+
+> Make sure you are located in the /circuits path.
+
+```bash
+mkdir out
+co-circom split-input --circuit rps.circom --input rps_js/input.json --protocol REP3 --curve BN254 --out-dir out/
+```
+This command secret shares the private inputs (everything that is not explicitly public) and creates a `.json` file for each of the three parties
+
+### Witness Extension
+In a real situation, you need to send the input files from the previous step to the parties. To achieve this, we need a network configuration for each party (you can read a detailed explanation about the configuration [here](https://docs.taceo.io/docs/co-circom-cli/config/)). 
+- You can download the TLS certificates from [GitHub TACEO](https://github.com/TaceoLabs/co-snarks/tree/c089006f5f17623518c6dc25b344ecfbf987c197/co-circom/examples/data) and put them under `data/`.
+- We move the .toml files to `configs/` and execute the following command (for every party).
+
+```bash
+co-circom generate-witness --input out/input.json.0.shared --circuit rps.circom --protocol REP3 --curve BN254 --config configs/party0.toml --out out/witness.wtns.0.shared & co-circom generate-witness --input out/input.json.1.shared --circuit rps.circom --protocol REP3 --curve BN254 --config configs/party1.toml --out out/witness.wtns.1.shared & co-circom generate-witness --input out/input.json.2.shared --circuit rps.circom --protocol REP3 --curve BN254 --config configs/party2.toml --out out/witness.wtns.2.shared
+```
+
+After all parties finished successfully, you will have three witness files in your out/ folder. Each one of them contains a share of the extended witness.
+
+### Prove the circuit
+
+We need another MPC step to finally get our Groht16 proof of co-SNARK. We can reuse TLS certificates and network configuration. Also, we finally need the proof key!
+
+```bash
+co-circom generate-proof groth16 --witness out/witness.wtns.0.shared --zkey ../build/circuit_final.zkey --protocol REP3 --curve BN254 --config configs/party0.toml --out ../prover/proof.0.json --public-input ../prover/public_input.json & co-circom generate-proof groth16 --witness out/witness.wtns.1.shared --zkey ../build/circuit_final.zkey --protocol REP3 --curve BN254 --config configs/party1.toml --out ../prover/proof.1.json --public-input ../prover/public_input.json & co-circom generate-proof groth16 --witness out/witness.wtns.2.shared --zkey ../build/circuit_final.zkey --protocol REP3 --curve BN254 --config configs/party2.toml --out ../prover/proof.2.json --public-input ../prover/public_input.json
+```
 
 # Resources
 - [Circom Documentation](https://docs.circom.io/getting-started/installation/)
