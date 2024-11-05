@@ -396,6 +396,17 @@ We need another MPC step to finally get our Groht16 proof of co-SNARK. We can re
 co-circom generate-proof groth16 --witness out/witness.wtns.0.shared --zkey ../build/circuit_final.zkey --protocol REP3 --curve BN254 --config configs/party0.toml --out ../prover/proof.0.json --public-input ../prover/public_input.json & co-circom generate-proof groth16 --witness out/witness.wtns.1.shared --zkey ../build/circuit_final.zkey --protocol REP3 --curve BN254 --config configs/party1.toml --out ../prover/proof.1.json --public-input ../prover/public_input.json & co-circom generate-proof groth16 --witness out/witness.wtns.2.shared --zkey ../build/circuit_final.zkey --protocol REP3 --curve BN254 --config configs/party2.toml --out ../prover/proof.2.json --public-input ../prover/public_input.json
 ```
 
+The three proofs produced by the separate parties are equivalent and valid Groth16 proofs. 
+
+### Verify the Proof
+
+To verify we can either use snarkjs or the co-circom binary.
+
+```bash
+co-circom verify groth16 --proof ../prover/proof.0.json --vk ../build/verification_key.json --public-input ../prover/public_input.json --curve BN254
+snarkjs groth16 verify ../build/verification_key.json ../prover/public_input.json ../prover/proof.0.json
+
+
 # Resources
 - [Circom Documentation](https://docs.circom.io/getting-started/installation/)
 - [Explanatory video of the RPS circuit](https://youtu.be/AWA107F2uDQ)

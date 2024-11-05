@@ -14,11 +14,11 @@ fi
 # Fase 2 sin contribuciones
 npx snarkjs powersoftau prepare phase2 $PHASE1 $PHASE2 -v
 
-npx snarkjs zkey new build/rps_1in_pr.r1cs $PHASE2 $CIRCUIT_ZKEY
+npx snarkjs zkey new build/rps.r1cs $PHASE2 $CIRCUIT_ZKEY
 
 npx snarkjs zkey export verificationkey $CIRCUIT_ZKEY build/verification_key.json
 
 
-npx snarkjs zkey export solidityverifier $CIRCUIT_ZKEY build/Verifier_1in_pr.sol
+npx snarkjs zkey export solidityverifier $CIRCUIT_ZKEY build/Verifier.sol
 # Fix versión de solidity (para que el comando funcione tanto en Linux como en Mac)
-cd build/ && sed 's/0\.6\.11/0\.7\.3/g' Verifier_1in_pr.sol > tmp.txt && mv tmp.txt Verifier_1in_prsol
+cd build/ && sed 's/0\.6\.11/0\.7\.3/g' Verifier_1in_pr.sol > tmp.txt && mv tmp.txt Verifier.sol
