@@ -343,11 +343,15 @@ So, if we agree on that, there are two ways to make the game decisions:
 1. **First way**: the `input.json` file has the moves `{player1: 2, player2: 5}`. From the input, the witness is created and with that witness a proof is generated. If we make the second move a public signal (we don't need zero knowledge for the second move) the game makes sense for one round. Since the first move is private, the first player will show a zero knowledge proof that he knows that move without showing it. The first player sends his proof on chain but he has to make a prior declaration that his move wins, loses or draws. Since the second move is a public signal that the second player will make later and the output of the circuit is another public signal, the Verifier.sol contract will simply verify whether the statement made by the prover, which is the first player, is fulfilled or not. The contract verifies that the public signals match the declared proof, or not. That is the first way that is feasible, but the drawback here is that the second move is public and ideally we would all like the idea of ​​all moves being private.
 
 We have created a new circuit, but identical to the rps.circcom one, this one is called `rps_1in_pr.circom` to homologate this scenario that we discussed, the only difference is that the input of the second player is public and not private, the modification in the circuit is just the following line
+
 <img src="assets/signal_pb.png" alt="signal_pb" width="500" height="20"/>
-After generating the Verifier.sol contract we can generate the parameters to call the function that verifies the proofs. For a successful proof the function returns true
+
+After generating the Verifier.sol contract we can generate the parameters to call the function that verifies the proofs. For a successful proof the function returns true.
+
 <img src="assets/proof_true.png" alt="proof_true" width="200" height="70"/>
 
 So if the player had played paper = 3. The public signal when you call Verifier does not satisfy the proof then the prover's statement is false and therefore he loses.
+
 <img src="assets/proof_false.png" alt="proof_false" width="350" height="250"/>
 
 In a second case, each player must present a proof of their move that guarantees zero knowledge.
@@ -405,7 +409,7 @@ To verify we can either use snarkjs or the co-circom binary.
 ```bash
 co-circom verify groth16 --proof ../prover/proof.0.json --vk ../build/verification_key.json --public-input ../prover/public_input.json --curve BN254
 snarkjs groth16 verify ../build/verification_key.json ../prover/public_input.json ../prover/proof.0.json
-
+```
 
 # Resources
 - [Circom Documentation](https://docs.circom.io/getting-started/installation/)
