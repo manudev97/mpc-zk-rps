@@ -6,6 +6,7 @@
 - [📝 Documentation zk-SNARKs](#-documentation-zk-snarks)
 - [🎮 Understanding the game](#-understanding-the-game)
 - [🔒 Private plays with co-SNARKs](#-private-plays-with-co-snarks)
+- [⚡ Smart Contracts on Cairo | StarkNet - L2](#-smart-contracts-on-cairo--starknet---l2)
 
 ## ✊ Rock ✋ Paper ✌️ Scissors | MPC - coSNARKs
 
@@ -410,6 +411,10 @@ To verify we can either use snarkjs or the co-circom binary.
 co-circom verify groth16 --proof ../prover/proof.0.json --vk ../build/verification_key.json --public-input ../prover/public_input.json --curve BN254
 snarkjs groth16 verify ../build/verification_key.json ../prover/public_input.json ../prover/proof.0.json
 ```
+
+## ⚡ Smart Contracts on Cairo | StarkNet - L2
+
+With the integration with Cairo, a Smart Contract can be created that executes and verifies the calculation procedures of the extended witness. When the parties divide their secret into three parts with co-SNARKs, if that execution is correct, STARKNET verifies it. The idea is that both players keep the move private and create their witness and their proof each on their PC. The idea is to use collaborative zkSNARKs using TACEO's co-circom library to generate an Extensible Witness, but we need this process to be carried out correctly and for this we can create a Smart contract in Cairo on Starknet that verifies that this calculation is correct so that when the proofs are generated with co-circom from the network configuration, users can deposit the proofs in a Verifier.sol contract in Ethereum after having approved the transaction in Ethereum that Starknet sent in the contract in Cairo that was executed correctly.
 
 # Resources
 - [Circom Documentation](https://docs.circom.io/getting-started/installation/)
