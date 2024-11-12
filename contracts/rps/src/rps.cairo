@@ -78,9 +78,6 @@ mod ProofManager {
         let verifier = self.verifier.read();
         assert(from_address == verifier, 'Unauthorized caller');
 
-        // Save the proof parts to storage or process them as you wish
-        self.player1_proof.write(proof1);  // just as an example of storage
-
         // emit an event to send the prrof data to L1
         self.emit(
             ProofSubmitted {

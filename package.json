@@ -26,5 +26,8 @@
   "homepage": "https://github.com/manudev97/mpc-zk-rps#readme",
   "dependencies": {
     "circomlib": "^2.0.5"
+  },
+  "devDependencies": {
+    "hardhat": "^2.22.15"
   }
 }

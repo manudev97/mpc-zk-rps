@@ -416,6 +416,14 @@ snarkjs groth16 verify ../build/verification_key.json ../prover/public_input.jso
 
 With the integration with Cairo, a Smart Contract can be created that executes and verifies the calculation procedures of the extended witness. When the parties divide their secret into three parts with co-SNARKs, if that execution is correct, STARKNET verifies it. The idea is that both players keep the move private and create their witness and their proof each on their PC. The idea is to use collaborative zkSNARKs using TACEO's co-circom library to generate an Extensible Witness, but we need this process to be carried out correctly and for this we can create a Smart contract in Cairo on Starknet that verifies that this calculation is correct so that when the proofs are generated with co-circom from the network configuration, users can deposit the proofs in a Verifier.sol contract in Ethereum after having approved the transaction in Ethereum that Starknet sent in the contract in Cairo that was executed correctly.
 
+Take a look at [how to integrate starkli](https://medium.com/starknet-edu/starkli-the-new-starknet-cli-86ea914a2933) to declare, deploy, and interact with a smart contract and how to integrate it with Braavos or Argent X for a better developer experience.
+
+```bash
+scarb build
+starkli declare target/dev/rps_ProofManager.contract_class.json
+starkli deploy [class hash] [deployer]
+```
+
 # Resources
 - [Circom Documentation](https://docs.circom.io/getting-started/installation/)
 - [Explanatory video of the RPS circuit](https://youtu.be/AWA107F2uDQ)
