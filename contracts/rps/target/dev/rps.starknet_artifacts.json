@@ -1,0 +1,1 @@
+{"version":1,"contracts":[{"id":"vl3927ugpn81a","package_name":"rps","contract_name":"ProofManager","module_path":"rps::rps::ProofManager","artifacts":{"sierra":"rps_ProofManager.contract_class.json","casm":null}}]}
