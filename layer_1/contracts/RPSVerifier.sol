@@ -33,6 +33,8 @@ contract RockPaperScissorsVerifier {
     /// @param _pA First part of the test.
     /// @param _pB Second part of the test.
     /// @param _pC Third part of the test.
+    /// @param contractAddress The address of the Layer 2 contract to which the message will be sent.
+    /// @param selector The function selector to call on the Layer 2 contract.
     function verifyGameResult(
         uint256[2] calldata _pA,
         uint256[2][2] calldata _pB,

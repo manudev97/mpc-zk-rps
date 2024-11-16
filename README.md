@@ -424,6 +424,13 @@ starkli declare target/dev/rps_ProofManager.contract_class.json
 starkli deploy [class hash] [deployer]
 ```
 
+Address Verifier - Layer 1: 0x46565B512A3E167b9196AD0B8eb3A14a7f593547
+Address RockPaperScissorsVerifier - Layer 1: 0x9cA3aF3E64e3eDf6eCfd0deF15cc24E6B3eB5055
+Address ProofManager - Layer 2: 0x0204521efe860b0e4ba290fda3994beafcb55835386bc7c4acfb2c5f5a587131
+selector // 0x02ee206af5b468bd3a0f382f37441601d9b049ebb71196c282d2bab1af7b7062
+Address Core - Layer 2: 0xE2Bb56ee936fd6433DC0F6e7e3b8365C906AA057
+
+
 # Resources
 - [Circom Documentation](https://docs.circom.io/getting-started/installation/)
 - [Explanatory video of the RPS circuit](https://youtu.be/AWA107F2uDQ)
