@@ -424,12 +424,17 @@ starkli declare target/dev/rps_ProofManager.contract_class.json
 starkli deploy [class hash] [deployer]
 ```
 
+#### Note 
 Address Verifier - Layer 1: 0x46565B512A3E167b9196AD0B8eb3A14a7f593547
-Address RockPaperScissorsVerifier - Layer 1: 0x9cA3aF3E64e3eDf6eCfd0deF15cc24E6B3eB5055
-Address ProofManager - Layer 2: 0x0204521efe860b0e4ba290fda3994beafcb55835386bc7c4acfb2c5f5a587131
+Address RockPaperScissorsVerifier - Layer 1: 0x640Db3cea09bD0178FDcA7067C4602b28Ace10E2
+Address ProofManager - Layer 2: 0x67b50853819b60e469bba99d00f85e530b76a4c51c196e50b275674587b0134
 selector // 0x02ee206af5b468bd3a0f382f37441601d9b049ebb71196c282d2bab1af7b7062
 Address Core - Layer 2: 0xE2Bb56ee936fd6433DC0F6e7e3b8365C906AA057
 
+Tx - 0x255280900fbb8f7ed8ec57536e50dbfd66ace14d1cfd13d5eb67077cfefda04 Payload 
+Contract reset: 0x78b73d49c8e316fa07310c003fcdfa8d004868615709194a13aacaf796b9df8 
+                0x67b50853819b60e469bba99d00f85e530b76a4c51c196e50b275674587b0134
+			Tx:	0x4c86ce03cc84805215d0146d66c521a15d58992bcf7bae3ee770881199007ff
 
 # Resources
 - [Circom Documentation](https://docs.circom.io/getting-started/installation/)

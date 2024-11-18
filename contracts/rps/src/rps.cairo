@@ -2,6 +2,7 @@
 pub trait IMatchProof<TContractState> {
     fn submit_proof(ref self: TContractState, proof: Proof);
     fn verify_proofs(self: @TContractState) -> bool;
+    fn reset_proofs(ref self: TContractState);
     fn get_winner(self: @TContractState) -> felt252;
 }
 
@@ -95,6 +96,11 @@ mod ProofManager {
             }
         }
     
+        fn reset_proofs(ref self: ContractState) {
+            self.player1_proof.write(DEFAULT_PROOF);
+            self.player2_proof.write(DEFAULT_PROOF);
+        }
+
         fn get_winner(self: @ContractState) -> felt252 {
             self.winner.read()
         }
