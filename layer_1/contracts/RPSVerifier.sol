@@ -4,7 +4,7 @@ import "./starknet/IStarknetMessaging.sol";
 
 error InvalidPayload();
 /// @title TicketVerifier
-/// @dev This contract is responsible for verifying the validity of a ticket using a zero-knowledge proof system.
+/// @dev This contract is responsible for verifying the validity of a RPS game using a zero-knowledge proof system.
 /// It interacts with the StarkNet messaging system to send messages to Layer 2.
 interface IVerifier {
     /// @notice Verifies a zero-knowledge proof.
@@ -27,6 +27,7 @@ contract RockPaperScissorsVerifier {
     IVerifier public _verifierContract;
     
     uint256 public publicSignal;
+    uint256 public pi_a_1;
     bool public success;
     /// @param starknetCore The address of the StarkNet core contract.
     constructor(address starknetCore, address _verifierAddress) {
@@ -64,6 +65,8 @@ contract RockPaperScissorsVerifier {
 
         // If no proof is valid, roll back the transaction
         require(success, "Invalid Proof");
+        
+
         uint256[] memory payload = new uint256[](1);
         payload[0] = publicSignal;
 
@@ -74,6 +77,7 @@ contract RockPaperScissorsVerifier {
         );
     }
 
+    
     function consumeMessageStarknet(
         uint256 fromAddress,
         uint256[] calldata payload
@@ -82,19 +86,20 @@ contract RockPaperScissorsVerifier {
     {
         _snMessaging.consumeMessageFromL2(fromAddress, payload);
 
-        if (payload.length != 8) {
+        if (payload.length != 16) {
             revert InvalidPayload();
         }
 
-        uint256 pi_a_1 = payload[0];
-        uint256 pi_a_2 = payload[1];
-        uint256 pi_b_11 = payload[2];
-        uint256 pi_b_12 = payload[3];
-        uint256 pi_b_21 = payload[4];
-        uint256 pi_b_22 = payload[5];
-        uint256 pi_c_1 = payload[6];
-        uint256 pi_c_2 = payload[7];
+        pi_a_1 = (payload[1] << 128) | payload[0];
+        uint256 pi_a_2 = (payload[3] << 128) | payload[2];
+        uint256 pi_b_11 = (payload[5] << 128) | payload[4];
+        uint256 pi_b_12 = (payload[7] << 128) | payload[6];
+        uint256 pi_b_21 = (payload[9] << 128) | payload[8];
+        uint256 pi_b_22 = (payload[11] << 128) | payload[10];
+        uint256 pi_c_1 = (payload[13] << 128) | payload[12];
+        uint256 pi_c_2 = (payload[15] << 128) | payload[14];
         require(pi_a_1 > 0 && pi_a_2 > 0 && pi_b_11 > 0 && pi_b_12 > 0 && pi_b_21 > 0 &&
          pi_b_22 > 0 && pi_c_1 > 0 && pi_c_2 > 0, "Invalid Value");
     }
+
 }

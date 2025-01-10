@@ -13,3 +13,4 @@ sierra-replace-ids = true
 
 [[target.starknet-contract]]
 sierra = true
+casm = true

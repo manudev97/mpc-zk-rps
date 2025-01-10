@@ -20,18 +20,17 @@ pub trait IMatchProof<TContractState> {
 
 #[starknet::contract]
 mod ProofManager {
-    use starknet::{EthAddress, SyscallResultTrait};
+    use starknet::{EthAddress, SyscallResultTrait, ContractAddress};
     use super::Proof;
     use super::IMatchProof;
-
     
 
     #[storage]
     struct Storage {
         player1_proof: Proof,      // proof of player 1
         player2_proof: Proof,      // proof of  player 2
-        proofs_match: bool,          // if the proof match
-        verifier: felt252,   // address of the authorized verifier
+        //proofs_match: bool,          // if the proof match
+        verifier: ContractAddress,   // address of the authorized verifier
         winner: felt252
     }
 
@@ -47,7 +46,7 @@ mod ProofManager {
     };
 
     #[constructor]
-    fn constructor(ref self: ContractState, verifier: felt252) {
+    fn constructor(ref self: ContractState, verifier: ContractAddress) {
         self.player1_proof.write(DEFAULT_PROOF);
         self.player2_proof.write(DEFAULT_PROOF);
         self.verifier.write(verifier); // we keep the address of the authorized verifier
@@ -104,15 +103,17 @@ mod ProofManager {
         fn get_winner(self: @ContractState) -> felt252 {
             self.winner.read()
         }
+
     }
 
     // l1 handler function to send the test from L1
     #[l1_handler]
     fn receive_message_value_l1(ref self: ContractState, from_address: felt252, value: felt252) {
-        let verifier = self.verifier.read();
-        assert(from_address == verifier, 'Unauthorized caller');
+        //  let verifier = self.verifier.read();
+        //  assert(from_address == verifier, 'Unauthorized caller');
         // Fixed value to be valid == 1 or 2 or 3
         assert(value == 0 || value == 1 || value == 2, 'Invalid value');
+        self.winner.write(value);
     }
 
     #[external(v0)]
@@ -123,7 +124,7 @@ mod ProofManager {
     ) {
         let mut buf: Array<felt252> = array![];
         proof.serialize(ref buf);
-        starknet::syscalls::send_message_to_l1_syscall(to_address.into(), buf.span()).unwrap_syscall();
+        starknet::syscalls::send_message_to_l1_syscall(to_address: to_address.into(), payload: buf.span()).unwrap_syscall();
 
         // emit an event to send the proof data to L1
         self.emit(

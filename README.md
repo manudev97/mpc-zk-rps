@@ -1,3 +1,14 @@
+
+
+<div style="text-align: center;">
+    <img src="assets/1.jpeg" alt="1" width="700" height="350"/>
+</div>
+
+<div style="text-align: center;">
+    <img src="assets/2.jpeg" alt="2" width="700" height="350"/>
+</div>
+
+
 # Index
 
 - [✊ Rock ✋ Paper ✌️ Scissors | MPC - coSNARKs](#-rock-paper-scissors--mpc---cosnarks)
@@ -420,21 +431,14 @@ Take a look at [how to integrate starkli](https://medium.com/starknet-edu/starkl
 
 ```bash
 scarb build
-starkli declare target/dev/rps_ProofManager.contract_class.json
-starkli deploy [class hash] [deployer]
+starkli signer keystore new signer
+starkli account oz init wallet --keystore signer
+starkli account deploy wallet --keystore signer
+# include in .gitignore (signer and wallet)
+starkli declare target/dev/rps_ProofManager.contract_class.json --keystore signer --account wallet
+starkli deploy [classhash] --keystore signer --account wallet [ContraactAddressEth]
 ```
 
-#### Note 
-Address Verifier - Layer 1: 0x46565B512A3E167b9196AD0B8eb3A14a7f593547
-Address RockPaperScissorsVerifier - Layer 1: 0x640Db3cea09bD0178FDcA7067C4602b28Ace10E2
-Address ProofManager - Layer 2: 0x67b50853819b60e469bba99d00f85e530b76a4c51c196e50b275674587b0134
-selector // 0x02ee206af5b468bd3a0f382f37441601d9b049ebb71196c282d2bab1af7b7062
-Address Core - Layer 2: 0xE2Bb56ee936fd6433DC0F6e7e3b8365C906AA057
-
-Tx - 0x255280900fbb8f7ed8ec57536e50dbfd66ace14d1cfd13d5eb67077cfefda04 Payload 
-Contract reset: 0x78b73d49c8e316fa07310c003fcdfa8d004868615709194a13aacaf796b9df8 
-                0x67b50853819b60e469bba99d00f85e530b76a4c51c196e50b275674587b0134
-			Tx:	0x4c86ce03cc84805215d0146d66c521a15d58992bcf7bae3ee770881199007ff
 
 # Resources
 - [Circom Documentation](https://docs.circom.io/getting-started/installation/)
