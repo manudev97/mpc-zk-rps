@@ -3,3 +3,4 @@ build
 .vscode
 contracts/rps/signer
 contracts/rps/wallet
+frontend

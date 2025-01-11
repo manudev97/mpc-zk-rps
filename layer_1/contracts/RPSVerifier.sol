@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 import "./starknet/IStarknetMessaging.sol";
 
+// starknetCore --> 0xE2Bb56ee936fd6433DC0F6e7e3b8365C906AA057
+// _verifierAddress --> 0x46565B512A3E167b9196AD0B8eb3A14a7f593547
 
 error InvalidPayload();
 /// @title TicketVerifier
@@ -27,7 +29,9 @@ contract RockPaperScissorsVerifier {
     IVerifier public _verifierContract;
     
     uint256 public publicSignal;
-    uint256 public pi_a_1;
+    uint256[2] public pA;
+    uint256[2][2] public pB;
+    uint256[2] public pC;
     bool public success;
     /// @param starknetCore The address of the StarkNet core contract.
     constructor(address starknetCore, address _verifierAddress) {
@@ -90,16 +94,16 @@ contract RockPaperScissorsVerifier {
             revert InvalidPayload();
         }
 
-        pi_a_1 = (payload[1] << 128) | payload[0];
-        uint256 pi_a_2 = (payload[3] << 128) | payload[2];
-        uint256 pi_b_11 = (payload[5] << 128) | payload[4];
-        uint256 pi_b_12 = (payload[7] << 128) | payload[6];
-        uint256 pi_b_21 = (payload[9] << 128) | payload[8];
-        uint256 pi_b_22 = (payload[11] << 128) | payload[10];
-        uint256 pi_c_1 = (payload[13] << 128) | payload[12];
-        uint256 pi_c_2 = (payload[15] << 128) | payload[14];
-        require(pi_a_1 > 0 && pi_a_2 > 0 && pi_b_11 > 0 && pi_b_12 > 0 && pi_b_21 > 0 &&
-         pi_b_22 > 0 && pi_c_1 > 0 && pi_c_2 > 0, "Invalid Value");
+        pA[0] = uint256(bytes32((payload[1] << 128) | payload[0]));
+        pA[1] = uint256(bytes32((payload[3] << 128) | payload[2]));
+
+        pB[0][0] = uint256(bytes32((payload[5] << 128) | payload[4]));
+        pB[0][1] = uint256(bytes32((payload[7] << 128) | payload[6]));
+        pB[1][0] = uint256(bytes32((payload[9] << 128) | payload[8]));
+        pB[1][1] = uint256(bytes32((payload[11] << 128) | payload[10]));
+
+        pC[0] = uint256(bytes32((payload[13] << 128) | payload[12]));
+        pC[1] = uint256(bytes32((payload[15] << 128) | payload[14]));
     }
 
 }
